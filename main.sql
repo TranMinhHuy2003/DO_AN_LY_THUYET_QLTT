@@ -6,7 +6,7 @@ CREATE TABLE DOANHNGHIEPNK(
 	TENDN	varchar(40),
 	NGAYTL	datetime,
 	DIACHI	varchar(40),
-	SDT		varchar(20),
+	SDT	varchar(20),
 	LOAIDN	varchar(20)
 );
 CREATE TABLE LOAIXANG(
@@ -19,7 +19,7 @@ CREATE TABLE XANGDAU(
 	TENXD	varchar(40),
 	MALX	char(4),
 	GIACOSO	decimal(5,3),
-	THUEPHI		int
+	THUEPHI	int
 );
 CREATE TABLE CUAHANG(
 	MACH	char(4) not null,
@@ -32,8 +32,8 @@ CREATE TABLE CUAHANG(
 CREATE TABLE NHAVANCHUYEN(
 	MANVC	char(4) not null,
 	TENNVC	varchar(40),
-	SDT		varchar(20),
-    DIACHI	varchar(40)
+	SDT	varchar(20),
+        DIACHI	varchar(40)
 );
 CREATE TABLE NHAP(
 	MAXD		char(4),
