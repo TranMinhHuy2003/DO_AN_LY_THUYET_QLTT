@@ -25,9 +25,9 @@ CREATE TABLE CUAHANG(
 	MACH	char(4) not null,
 	TENCH	varchar(40),
 	BACCL	varchar(2),
-	RONGDD	int,
-	CAOTB	int,
-	CAOMC	int
+	RONGDD	float,
+	CAOTB	float,
+	CAOMC	float
 );
 CREATE TABLE NHAVANCHUYEN(
 	MANVC	char(4) not null,
