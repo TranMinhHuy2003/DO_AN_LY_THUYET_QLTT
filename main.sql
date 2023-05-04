@@ -1,5 +1,5 @@
 CREATE DATABASE QLXD;
-
+USE QLXD;
 -- tao bang
 CREATE TABLE DOANHNGHIEPNK(
 	MADN	char(4) not null,
