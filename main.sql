@@ -520,6 +520,19 @@ BEGIN
 END$$
 DELIMITER ;
 
+-- 3. Thống kê số lượng xăng dầu theo số lượng nhập từ cao xuống thấp 
+DELIMITER $$
+CREATE PROCEDURE thongke_soluong_xangdau ()
+BEGIN
+	SELECT X.MAXD, TENXD, GIACOSO, THUEPHI, SUM(SOLUONG) AS TONGSOLUONG
+    FROM NHAP AS N, XANGDAU AS X
+    WHERE N.MAXD = X.MAXD 
+    GROUP BY X.MAXD, TENXD, GIACOSO, THUEPHI
+    ORDER BY TONGSOLUONG DESC;
+END$$
+DELIMITER ;
+
+
 -- CRYSTAL REPORT 
 -- 1. Tạo View để thống kê MAXD, TENXD, GIACOSO, THUEPHI, GIANHAP (đồng/lít) của các xăng dầu để các chủ cửa hàng xem
 CREATE VIEW thongke_xangdau 
@@ -534,4 +547,13 @@ AS
     FROM NHAP AS N, XANGDAU AS X, CUAHANG AS C
     WHERE N.MAXD = X.MAXD AND C.MACH = N.MACH 
     GROUP BY MACH, TENCH, MAXD, TENXD;
+
+-- 3. Tạo View để thống kê số lượng xăng dầu theo số lượng nhập từ cao xuống thấp 
+CREATE VIEW thongke_soluong_xangdau
+AS
+    SELECT X.MAXD, TENXD, GIACOSO, THUEPHI, SUM(SOLUONG) AS TONGSOLUONG
+    FROM NHAP AS N, XANGDAU AS X
+    WHERE N.MAXD = X.MAXD 
+    GROUP BY X.MAXD, TENXD, GIACOSO, THUEPHI
+    ORDER BY TONGSOLUONG DESC;
 
