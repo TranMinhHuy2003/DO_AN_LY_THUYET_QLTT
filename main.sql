@@ -93,7 +93,18 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 2. NGAYNK (DN_XD) không nhỏ hơn NGAYTL (DNNK) của một doanh nghiệp nhập khẩu xăng dầu
+-- 1.1 THỰC THI 
+DELETE FROM LOAIXANG WHERE MALX = 'LX02';
+-- 1.2 KIỂM TRA
+SELECT * FROM XANGDAU ;
+-- 1.3 KHÔI PHỤC DỮ LIỆU 
+INSERT INTO LOAIXANG VALUES ("LX02","Xăng E5 RON 92-II","II");
+SET FOREIGN_KEY_CHECKS = 0;
+INSERT INTO XANGDAU VALUES ("XD01","Xăng E5 A92 vùng 1","LX02",22680,8);
+INSERT INTO XANGDAU VALUES ("XD02","Xăng E5 A92 vùng 2","LX02",23130,8);
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- 2. NGAYNK (DN_XD) không nhỏ hơn NGAYTL (DNNK) của doanh nghiệp nhập khẩu xăng dầu đó
 
 DELIMITER $$
 CREATE TRIGGER update_dnnk 
@@ -121,6 +132,12 @@ BEGIN
 END$$
 DELIMITER ;
 
+-- 2.1 THỰC THI 
+INSERT INTO DN_XD VALUES ("DN01","XD01","2022-01-10"); -- THÀNH CÔNG 
+INSERT INTO DN_XD VALUES ("DN01","XD01","1955-01-10"); -- THẤT BẠI
+-- 2.2 KHÔI PHỤC DỮ LIỆU 
+DELETE FROM DN_XD WHERE MADN = 'DN01' AND MAXD = 'XD01' AND NGAYNK = '2022-01-10';
+
 -- 3. NGAYNHAP của 1 xăng dầu không được nhỏ hơn NGAYNK đầu tiên của chính nó 
 DELIMITER $$
 CREATE TRIGGER insert_nhap 
@@ -134,6 +151,14 @@ BEGIN
 	END IF; 
 END$$
 DELIMITER ;
+
+-- 3.1 THỰC THI 
+-- NGNK ĐẦU TIÊN CỦA XD01 LÀ 10-01-2023 
+INSERT INTO NHAP VALUES ("XD01","CH02","2023-03-20",3000,0); -- THÀNH CÔNG
+INSERT INTO NHAP VALUES ("XD01","CH02","2022-03-20",3000,0); -- THẤT BẠI 
+-- 3.2 KHÔI PHỤC DỮ LIỆU 
+DELETE FROM NHAP WHERE MAXD = 'XD01' AND MACH = 'CH02' AND NGAYNHAP = '2023-03-20';
+
 
 -- 4. Cửa hàng phải đạt BACCL là I hoặc II, CHIEUCAOMC phải lớn hơn hoặc bằng 4.75m, RONGDD lớn hơn hoặc bằng 6.5m
 -- , CAOTUONGBAO không nhỏ hơn 2.2m thì mới được phép nhập xăng dầu để bán
@@ -165,6 +190,40 @@ BEGIN
 END$$
 DELIMITER ;
 
+DELIMITER $$
+CREATE TRIGGER update_cuahang 
+BEFORE UPDATE ON CUAHANG 
+FOR EACH ROW
+BEGIN
+    IF (SELECT NEW.BACCL) NOT IN ('I','II')
+    THEN 
+			SIGNAL SQLSTATE '45000'
+			SET MESSAGE_TEXT = 'BẬC CHỊU LỬA PHẢI LÀ I HOẶC II!';
+	END IF;
+	IF (SELECT NEW.RONGDD) < 6.5 
+    THEN 
+			SIGNAL SQLSTATE '45000'
+			SET MESSAGE_TEXT = 'CHIỀU RỘNG ĐƯỜNG ĐI PHẢI LỚN HƠN HOẶC BẰNG 6.5m!';
+	END IF; 
+    IF (SELECT NEW.CAOTB) < 2.2 
+    THEN 
+			SIGNAL SQLSTATE '45000'
+			SET MESSAGE_TEXT = 'CHIỀU CAO TƯỜNG BAO KHÔNG ĐƯỢC NHỎ HƠN 2.2m!';
+	END IF; 
+    IF (SELECT NEW.CAOMC) < 4.75 
+    THEN 
+			SIGNAL SQLSTATE '45000'
+			SET MESSAGE_TEXT = 'CHIỀU CAO MÁI CHE PHẢI LỚN HƠN HOẶC BẰNG 4.75m!';
+	END IF; 
+END$$
+DELIMITER ;
+
+-- 4.1 THỰC THI 
+INSERT INTO CUAHANG VALUES ("CH11","Petrolimex-03","I",6,2.5,5.0); -- THẤT BẠI 
+INSERT INTO CUAHANG VALUES ("CH11","Petrolimex-03","I",6.5,2.5,5.0); -- THÀNH CÔNG 
+-- 4.2 KHÔI PHỤC DỮ LIỆU
+DELETE FROM CUAHANG WHERE MACH = 'CH11';
+
 -- 5. GIANHAP = GIACOSO + (THUEPHI / 100) * GIACOSO
 DELIMITER $$
 CREATE TRIGGER insert_nhap_gianhap
@@ -192,6 +251,13 @@ BEGIN
 END$$
 DELIMITER ;
 
+-- 5.1 THỰC THI
+INSERT INTO NHAP VALUES ("XD09","CH01","2023-03-18",300,0);
+-- 5.2 KIỂM TRA
+SELECT * FROM NHAP ;
+-- 5.3 KHÔI PHỤC DỮ LIỆU
+DELETE FROM NHAP WHERE MAXD = 'XD09' AND MACH = 'CH01';
+
 -- 6. MDBQ của 1 loại xăng chỉ có các loại sau: IA, IB, II, III, IV và V
 DELIMITER $$
 CREATE TRIGGER insert_loaixang
@@ -218,6 +284,20 @@ BEGIN
 	END IF; 
 END$$
 DELIMITER ;
+
+-- 6.1 THỰC THI 
+UPDATE LOAIXANG 
+SET MDBQ = 'IIA'
+WHERE MALX = 'LX06'; -- THẤT BẠI 
+
+UPDATE LOAIXANG 
+SET MDBQ = 'IA'
+WHERE MALX = 'LX06'; -- THÀNH CÔNG
+-- 6.2 KHÔI PHỤC DỮ LIỆU 
+UPDATE LOAIXANG 
+SET MDBQ = 'V'
+WHERE MALX = 'LX06'; 
+
 
 -- du lieu
 -- DOANHNGHIEPNK
@@ -485,22 +565,32 @@ INSERT INTO DN_XD VALUES ("DN10","XD12","2023-01-09");
 
 -- PHÂN QUYỀN
 
--- 1. Chủ doanh nghiệp nhập khẩu xăng dầu có quyền thêm trên bảng NHAP
+-- 1. Chủ doanh nghiệp nhập khẩu xăng dầu có quyền xem và thêm trên bảng NHAP
 CREATE USER 'dnnk'@'localhost' IDENTIFIED BY '123';
+GRANT SELECT ON qlxd.NHAP TO 'dnnk'@'localhost';
+FLUSH PRIVILEGES;
 GRANT INSERT ON qlxd.NHAP TO 'dnnk'@'localhost';
 FLUSH PRIVILEGES;
 
--- 2. Chủ doanh nghiệp nhập khẩu có quyền truy vấn trên tất cả các bảng 
+-- 2. Chủ doanh nghiệp nhập khẩu có quyền xem trên tất cả các bảng 
 GRANT SELECT ON qlxd.* TO 'dnnk'@'localhost';
 FLUSH PRIVILEGES;
+SHOW GRANTS FOR 'dnnk'@'localhost';
 
--- 3. Bộ Công Thương có quyền thêm, xóa, sửa trên tất cả các bảng 
+-- 3. Bộ Công Thương có toàn quyền trên tất cả các bảng 
 CREATE USER 'BOCONGTHUONG'@'localhost' IDENTIFIED BY '000';
 GRANT ALL PRIVILEGES ON qlxd.* TO 'BOCONGTHUONG'@'localhost';
 FLUSH PRIVILEGES;
+SHOW GRANTS FOR 'BOCONGTHUONG'@'localhost';
+
+-- 4. Chủ cửa hàng kinh doanh xăng dầu có quyền xem trên tất cả các bảng 
+CREATE USER 'cuahang'@'localhost' IDENTIFIED BY '456';
+GRANT SELECT ON qlxd.* TO 'cuahang'@'localhost';
+FLUSH PRIVILEGES;
+SHOW GRANTS FOR 'cuahang'@'localhost';
 
 -- STORED PROCEDURE
--- 1. Thống kê MAXD, TENXD, GIACOSO, THUEPHI, GIANHAP (đồng/lít) của các xăng dầu để các chủ cửa hàng xem
+-- 1. Thống kê MAXD, TENXD, GIACOSO, THUEPHI, GIANHAP (đồng/lít) của các xăng dầu 
 DELIMITER $$
 CREATE PROCEDURE thongke_xangdau ()
 BEGIN
@@ -508,6 +598,8 @@ BEGIN
     FROM XANGDAU;
 END$$
 DELIMITER ;
+
+CALL thongke_xangdau;
 
 -- 2. Thống kê để xem cửa hàng nào nhập xăng dầu nào, số lượng (lít), tổng tiền (đồng)
 DELIMITER $$
@@ -519,6 +611,8 @@ BEGIN
     GROUP BY MACH, TENCH, MAXD, TENXD;
 END$$
 DELIMITER ;
+
+CALL thongke_cuahang_xangdau;
 
 -- 3. Thống kê số lượng xăng dầu theo số lượng nhập từ cao xuống thấp 
 DELIMITER $$
@@ -532,6 +626,7 @@ BEGIN
 END$$
 DELIMITER ;
 
+CALL thongke_soluong_xangdau;
 
 -- CRYSTAL REPORT 
 -- 1. Tạo View để thống kê MAXD, TENXD, GIACOSO, THUEPHI, GIANHAP (đồng/lít) của các xăng dầu để các chủ cửa hàng xem
@@ -556,4 +651,3 @@ AS
     WHERE N.MAXD = X.MAXD 
     GROUP BY X.MAXD, TENXD, GIACOSO, THUEPHI
     ORDER BY TONGSOLUONG DESC;
-
